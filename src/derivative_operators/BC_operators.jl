@@ -155,27 +155,6 @@ end
 
 
 
-"""
-Quick and dirty way to allow mixed boundary types on each end of an array - may be cleaner and more versatile to split up left and right boundaries going forward
-MixedBC(lowerBC, upperBC) is the interface.
-"""
-
-struct MixedBC{T, R, S} <: AtomicBC{T}
-    lower::R
-    upper::S
-    function MixedBC(Qlower,Qupper)
-        @assert Qlower isa AtomicBC
-        @assert Qupper isa AtomicBC
-         new{Union{gettype(Qlower), gettype(Qupper)}, typeof(Qlower), typeof(Qupper)}(Qlower, Qupper)
-     end
-end
-
-function Base.:*(Q::MixedBC, u::AbstractVector)
-    lower = Q.lower*u
-    upper = Q.upper*u
-    return BoundaryPaddedVector(lower.l, upper.r, u)
-end
-
 #implement Neumann and Dirichlet as special cases of RobinBC
 NeumannBC(α::AbstractVector{T}, dx::Union{AbstractVector{T}, T}, order = 1) where T = RobinBC([zero(T), one(T), α[1]], [zero(T), one(T), α[2]], dx, order)
 DirichletBC(αl::T, αr::T) where T = RobinBC([one(T), zero(T), αl], [one(T), zero(T), αr], 1.0, 2.0 )
@@ -185,6 +164,7 @@ Neumann0BC(dx::Union{AbstractVector{T}, T}, order = 1) where T = NeumannBC([zero
 
 # other acceptable argument signatures
 #RobinBC(al::T, bl::T, cl::T, dx_l::T, ar::T, br::T, cr::T, dx_r::T, order = 1) where T = RobinBC([al,bl, cl], [ar, br, cr], dx_l, order)
+
 
 """
 BridgeBC(u_low::AbstractArray{T,N}, u_up::AbstractArray{T,N}, indslow, indsup) # A different view in to 2 diffferent arrays on each end of the boundary, indslow is an iterable of indicies that index u_low, which extends the lower index end. Analogous for u_up and indsup with the upper boundary.
@@ -272,6 +252,7 @@ function BridgeBCBridgeBC(bc1::AtomicBC, u1::AbstractArray{T,1}, hilo1::String, 
 end
 
 Base.:*(Q::BridgeBC{T,I,N}, u::AbstractVector{T}) where {T, I, N} = BoundaryPaddedVector{T, typeof(u)}(Q.b_l[1], Q.b_r[1], u)
+
 Base.:*(Q::AffineBC, u::AbstractVector) = BoundaryPaddedVector(Q.a_l ⋅ u[1:length(Q.a_l)] + Q.b_l, Q.a_r ⋅ u[(end-length(Q.a_r)+1):end] + Q.b_r, u)
 Base.:*(Q::PeriodicBC, u::AbstractVector) = BoundaryPaddedVector(u[end], u[1], u)
 

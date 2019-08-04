@@ -27,7 +27,7 @@ end
 Higher dimensional generalization of BoundaryPaddedVector, pads an array of dimension N along the dimension D with 2 Arrays of dimension N-1, stored in lower and upper
 
 """
-struct BoundaryPaddedArray{T<:Number, D, N, M, V<:AbstractArray{T, N}, B<: AbstractArray{T, M}} <: AbstractBoundaryPaddedArray{T,N}
+struct BoundaryPaddedArray{T, D, N, M, V<:AbstractArray{T, N}, B<: AbstractArray{T, M}} <: AbstractBoundaryPaddedArray{T,N}
     lower::B #an array of dimension M = N-1, used to extend the lower index boundary
     upper::B #Ditto for the upper index boundary
     u::V
@@ -71,7 +71,7 @@ end
 
 # Composed BoundaryPaddedArray
 
-struct ComposedBoundaryPaddedArray{T<:Number, N, M, V<:AbstractArray{T, N}, B<: AbstractArray{T, M}} <: AbstractBoundaryPaddedArray{T, N}
+struct ComposedBoundaryPaddedArray{T, N, M, V<:AbstractArray{T, N}, B<: AbstractArray{T, M}} <: AbstractBoundaryPaddedArray{T, N}
     lower::Vector{B}
     upper::Vector{B}
     u::V
@@ -87,7 +87,6 @@ BoundaryPadded3Tensor{T, D, V, B} = BoundaryPaddedArray{T, D, 3, 2, V, B}
 ComposedBoundaryPaddedMatrix{T,V,B} = ComposedBoundaryPaddedArray{T,2,1,V,B}
 ComposedBoundaryPadded3Tensor{T,V,B} = ComposedBoundaryPaddedArray{T,3,2,V,B}
 
-
 Base.size(Q::ComposedBoundaryPaddedArray) = size(Q.u).+2
 
 """
@@ -101,26 +100,16 @@ decompose(A::ComposedBoundaryPaddedArray) = Tuple([BoundaryPaddedArray{gettype(A
 
 
 Base.length(Q::AbstractBoundaryPaddedArray) = reduce((*), size(Q))
-Base.lastindex(Q::AbstractBoundaryPaddedArray) = Base.length(Q)
+Base.firstindex(Q::AbstractBoundaryPaddedArray, d::Int) = 1
+Base.lastindex(Q::AbstractBoundaryPaddedArray) = length(Q)
+Base.lastindex(Q::AbstractBoundaryPaddedArray, d::Int) = size(Q)[d]
 gettype(Q::AbstractBoundaryPaddedArray{T,N}) where {T,N} = T
 Base.ndims(Q::AbstractBoundaryPaddedArray{T,N}) where {T,N} = N
 
 add_dim(A::AbstractArray, i) = reshape(A, size(A)...,i)
 add_dim(i) = i
 
-function experms(N::Integer, dim) # A function to correctly permute the dimensions of the padding arrays so that they can be concatanated with the rest of u in getindex(::BoundaryPaddedArray)
-    if dim == N
-        return Vector(1:N)
-    elseif dim < N
-        P = experms(N, dim+1)
-        P[dim], P[dim+1] = P[dim+1], P[dim]
-        return P
-    else
-        throw("Dim is greater than N!")
-    end
-end
-
-function Base.getindex(Q::BoundaryPaddedArray{T,D,N,M,V,B}, _inds...) where {T,D,N,M,V,B} #supports range and colon indexing!
+function Base.getindex(Q::BoundaryPaddedArray{T,D,N,M,V,B}, _inds::Vararg{Int,N}) where {T,D,N,M,V,B} #supports range and colon indexing!
     inds = [_inds...]
     S = size(Q)
     dim = D
@@ -144,10 +133,8 @@ function Base.getindex(Q::BoundaryPaddedArray{T,D,N,M,V,B}, _inds...) where {T,D
     end
 end
 
-function Base.getindex(Q::ComposedBoundaryPaddedArray, inds...) #as yet no support for range indexing or colon indexing
+function Base.getindex(Q::ComposedBoundaryPaddedArray{T, N, M, V, B} , inds::Vararg{Int, N}) where {T, N, M, V, B} #as yet no support for range indexing or colon indexing
     S = size(Q)
-    T = gettype(Q)
-    N = ndims(Q)
     @assert reduce((&), inds .<= S)
     for (dim, index) in enumerate(inds)
         if index == 1
