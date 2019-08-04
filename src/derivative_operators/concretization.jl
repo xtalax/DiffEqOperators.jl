@@ -105,7 +105,6 @@ function LinearAlgebra.Array(Q::BoundaryPaddedArray{T,D,N,M,V,B}) where {T,D,N,M
     S = size(Q)
     out = zeros(T, S...)
     dim = D
-    dimset = 1:N
     ulowview = selectdim(out, dim, 1)
     uhighview = selectdim(out, dim, S[dim])
     uview = selectdim(out, dim, 2:(S[dim]-1))
@@ -135,6 +134,39 @@ function LinearAlgebra.Array(Q::ComposedBoundaryPaddedArray{T,N,M,V,B}) where {T
     return out
 end
 
+function LinearAlgebra.Array(Q::MultiLayerBoundaryPaddedArray{T,D,N,L,V,B}) where {T,D,N,L,V,B}
+    S = size(Q)
+    out = zeros(T, S...)
+    ulowview = selectdim(out, D, 1:L)
+    uhighview = selectdim(out, D, (S[D]-L+1):S[D])
+    uview = selectdim(out, dim, (L+1):(S[dim]-L))
+    ulowview .= Q.lower
+    uhighview .= Q.upper
+    uview .= Q.u
+    return out
+end
+
+function LinearAlgebra.Array(Q::ComposedMultiLayerBoundaryPaddedArray{T,N,L,V,B}) where {T,N,L,V,B}
+    S = size(Q)
+    out = zeros(T, S...)
+    I = S .- L
+    dimset = 1:N
+    uview = out
+    for dim in dimset
+        ulowview = selectdim(out, dim, 1:L[dim])
+        uhighview = selectdim(out, dim, I[dim])
+        uview = selectdim(uview, dim, L[dim]:I[dim])
+        for (index, otherdim) in enumerate(setdiff(dimset, dim))
+            ulowview = selectdim(ulowview, index, (L[otherdim]+1):I[otherdim])
+            uhighview = selectdim(uhighview, index, (L[otherdim]+1):I[otherdim])
+        end
+        ulowview .= Q.lower[dim]
+        uhighview .= Q.upper[dim]
+    end
+    uview .= Q.u
+    return out
+end
+
 function Base.convert(::Type{AbstractArray}, A::AbstractBoundaryPaddedArray)
     Array(A)
 end
@@ -142,7 +174,7 @@ end
 ################################################################################
 # Boundary Condition Operator concretizations
 ################################################################################
-add_dims(A::AbstractArray, n::Int) = cat(ndims(a) + n, a)
+
 #Atomic BCs
 function LinearAlgebra.Array(Q::AffineBC{T}, N::Int) where {T}
     Q_L = [transpose(Q.a_l) transpose(zeros(T, N-length(Q.a_l))); Diagonal(ones(T,N)); transpose(zeros(T, N-length(Q.a_r))) transpose(Q.a_r)]
