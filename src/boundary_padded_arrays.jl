@@ -155,3 +155,68 @@ function Base.getindex(Q::ComposedBoundaryPaddedArray{T, N, M, V, B} , inds::Var
      end
     return Q.u[(inds.-1)...]
 end
+
+# Multilayer
+
+struct MultiLayerBoundaryPaddedArray{T, D, N, L, V<:AbstractArray{T, N}, B<: AbstractArray{T, N}} <: AbstractBoundaryPaddedArray{T,N}
+    lower::B #an array of dimension N, used to extend the lower index boundary
+    upper::B #Ditto for the upper index boundary
+    u::V
+end
+
+getaxis(Q::MultiLayerBoundaryPaddedArray{T,D,N,L,V,B}) where {T,D,N,L,V,B} = D
+getlayers(Q::MultiLayerBoundaryPaddedArray{T,D,N,L,V,B}) where {T,D,N,L,V,B} = L
+
+function Base.size(Q::MultiLayerBoundaryPaddedArray)
+    S = [size(Q.u)...]
+    S[getaxis(Q)] += 2*getlayers(Q)
+    return Tuple(S)
+end
+
+function Base.getindex(Q::MultiLayerBoundaryPaddedArray{T,D,N,L,V,B}, _inds::Vararg{Int,N}) where {T,D,N,L,V,B} #supports range and colon indexing!
+
+    S = size(Q)
+    @assert length(S) == N
+    if _inds[D] ≤ L
+        I = CartesianIndex(_inds)
+        return Q.lower[I]
+    elseif _inds[D] ≥ S[D]-L+1
+        return Q.upper[I]
+    elseif typeof(_inds[D]) <: Integer
+        inds[D] = inds[D] - 1
+        return Q.u[I]
+    elseif typeof(inds[D]) == Colon
+        throw("A colon on the extended dim is as yet incompatible with additional colons")
+    elseif typeof(inds[D]) <: AbstractArray
+        throw("Range indexing not yet supported!")
+    end
+end
+
+struct ComposedMultiLayerBoundaryPaddedArray{T, N, L, V<:AbstractArray{T, N}, B<: AbstractArray{T, N}} <: AbstractBoundaryPaddedArray{T, N}
+    lower::Vector{B}
+    upper::Vector{B}
+    u::V
+end
+
+function Base.getindex(Q::ComposedMultiLayerBoundaryPaddedArray{T, N, L, V, B} , inds::Vararg{Int, N}) where {T, N, L, V, B} #as yet no support for range indexing or colon indexing
+    S = size(Q)
+    @assert reduce((&), inds .<= S)
+    for (dim, index) in enumerate(inds)
+        if index == 1
+            _inds = inds[setdiff(1:N, dim)]
+            if (1 ∈ _inds) | reduce((|), S[setdiff(1:N, dim)] .== _inds)
+                return zero(T)
+            else
+                return Q.lower[dim][(_inds.-1)...]
+            end
+        elseif index == S[dim]
+            _inds = inds[setdiff(1:N, dim)]
+            if (1 ∈ _inds) | reduce((|), S[setdiff(1:N, dim)] .== _inds)
+                return zero(T)
+            else
+                return Q.upper[dim][(_inds.-1)...]
+            end
+        end
+     end
+    return Q.u[(inds.-1)...]
+end
