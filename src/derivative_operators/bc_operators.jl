@@ -7,6 +7,7 @@ abstract type AtomicBC{T} <: AbstractBC{T} end
 Robin, General, and in general Neumann, Dirichlet and Bridge BCs
 are not necessarily linear operators.  Instead, they are affine
 operators, with a constant term Q*x = Qa*x + Qb.
+
 """
 abstract type AffineBC{T} <: AtomicBC{T} end
 
@@ -17,7 +18,9 @@ struct Dirichlet0BC{N} end
 
 """
 q = PeriodicBC{T}()
+
 Qx, Qy, ... = PeriodicBC{T}(size(u)) #When all dimensions are to be extended with a periodic boundary condition.
+
 -------------------------------------------------------------------------------------
 Creates a periodic boundary condition, where the lower index end of some u is extended with the upper index end and vice versa.
 It is not reccomended to concretize this BC type in to a BandedMatrix, since the vast majority of bands will be all 0s. SpatseMatrix concretization is reccomended.
@@ -28,8 +31,12 @@ end
 
 """
   q = RobinBC(left_coefficients, right_coefficients, dx::T, approximation_order) where T # When this BC extends a dimension with a uniform step size
+
+
   q = RobinBC(left_coefficients, right_coefficients, dx::Vector{T}, approximation_order) where T # When this BC extends a dimension with a non uniform step size. dx should be the vector of step sizes for the whole dimension
+
 -------------------------------------------------------------------------------------
+
   The variables in l are [αl, βl, γl], and correspond to a BC of the form αl*u(0) + βl*u'(0) = γl imposed on the lower index boundary.
   The variables in r are [αl, βl, γl], and correspond to an analagous boundary on the higher index end.
   Implements a robin boundary condition operator Q that acts on a vector to give an extended vector as a result
@@ -59,7 +66,9 @@ struct RobinBC{T, V<:AbstractVector{T}} <: AffineBC{T}
 
         return new{T, typeof(a_l)}(a_l, b_l, a_r, b_r)
     end
+  
     function RobinBC(l::Union{NTuple{3,T},AbstractVector{T}}, r::Union{NTuple{3,T},AbstractVector{T}}, dx::AbstractVector{T}, order = 1) where {T}
+
         αl, βl, γl = l
         αr, βr, γr = r
 
@@ -94,8 +103,8 @@ Implements a generalization of the Robin boundary condition, where α is a vecto
 Represents a condition of the form α[1] + α[2]u[0] + α[3]u'[0] + α[4]u''[0]+... = 0
 Implemented in a similar way to the RobinBC (see above).
 This time there are multiple stencils for multiple derivative orders - these can be written as a matrix S.
-All components that multiply u(0) are factored out, turns out to only involve the first column of S, s̄0. The rest of S is denoted S`. the coeff of u(0) is s̄0⋅ᾱ[3:end] + α[2].
-the remaining components turn out to be ᾱ[3:end]⋅(S`ū`) or equivalently (transpose(ᾱ[3:end])*S`)⋅ū`. Rearranging, a stencil q_a to be dotted with ū` upon extension can readily be found, along with a constant component q_b
+All components that multiply u(0) are factored out, turns out to only involve the first colum of S, s̄0. The rest of S is denoted S`. the coeff of u(0) is s̄0⋅ᾱ[3:end] + α[2].
+the remaining components turn out to be ᾱ[3:end]⋅(S`ū`) or equivalantly (transpose(ᾱ[3:end])*S`)⋅ū`. Rearranging, a stencil q_a to be dotted with ū` upon extension can readily be found, along with a constant component q_b
 """
 struct GeneralBC{T, L<:AbstractVector{T}, R<:AbstractVector{T}} <:AffineBC{T}
     a_l::L

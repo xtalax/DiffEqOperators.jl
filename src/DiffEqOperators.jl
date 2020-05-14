@@ -5,6 +5,9 @@ using DiffEqBase, StaticArrays, LinearAlgebra
 import LinearAlgebra: mul!, ldiv!, lmul!, rmul!, axpy!, opnorm, factorize, I
 import DiffEqBase: AbstractDiffEqLinearOperator, update_coefficients!, isconstant
 using SparseArrays, ForwardDiff, BandedMatrices, NNlib, LazyArrays, BlockBandedMatrices
+
+abstract type AbstractDiffEqAffineOperator{T} end
+
 using ModelingToolkit
 
 abstract type AbstractDiffEqAffineOperator{T} end
@@ -37,6 +40,10 @@ include("derivative_operators/coefficient_functions.jl")
 
 ### Composite Operators
 include("composite_operators.jl")
+
+
+### Concretizations
+include("derivative_operators/concretization.jl")
 
 include("MOL_discretization.jl")
 

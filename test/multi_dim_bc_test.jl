@@ -15,7 +15,6 @@ q2 = PeriodicBC{Float64}()
 BCx = vcat(fill(q1, div(m,2)), fill(q2, m-div(m,2)))  #The size of BCx has to be all size components *except* for x
 BCy = vcat(fill(q1, div(n,2)), fill(q2, n-div(n,2)))
 
-
 Qx = MultiDimBC{1}(BCx)
 Qy = MultiDimBC{2}(BCy)
 

@@ -234,7 +234,7 @@ function LinearAlgebra.Array(Q::ComposedMultiDimBC{T, B, N,M} , s::NTuple{N,G}) 
     for dim in 1:N #Loop over boundaries
         r_ = deepcopy(ranges)
         r_[dim] = 1
-        lower = CartesianIndices((Tuple(r_))) #set up upper anmd lower indices
+        lower = CartesianIndices((Tuple(r_))) #set up upper and lower indices
         r_[dim] = s_pad[dim]
         upper = CartesianIndices((Tuple(r_)))
         for K in CartesianIndices(upper) #for every element of the boundaries
@@ -342,7 +342,6 @@ end
 
 SparseArrays.sparse(Q::MultiDimDirectionalBC, s) = SparseMatrixCSC(Q, s)
 SparseArrays.sparse(Q::ComposedMultiDimBC, s) = SparseMatrixCSC(Q, s)
-
 
 function BandedMatrices.BandedMatrix(Q:: MultiDimensionalBC, M) where {T, B, D,N,K}
     throw("Banded Matrix cocnretization not yet supported for MultiDimensionalBCs")
@@ -701,6 +700,7 @@ function BandedMatrices.BandedMatrix(A::DerivativeOperator{T,N,true,M}, len::Int
     end
     return L
 end
+
 
 # GhostDerivativeOperator Concretizations
 ################################################################################

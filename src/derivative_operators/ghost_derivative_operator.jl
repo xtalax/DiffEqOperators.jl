@@ -14,10 +14,10 @@ end
 function *(A::GhostDerivativeOperator{T1}, u::AbstractArray{T2}) where {T1,T2}
     #TODO Implement a function domaincheck(L::AbstractDiffEqLinearOperator, u) to see if components of L along each dimension match the size of u
     x = similar(u, promote_type(T1,T2))
+
     LinearAlgebra.mul!(x, A.L, A.Q*u)
     return x
 end
-
 
 function \(A::GhostDerivativeOperator, u::AbstractArray) # FIXME should have T1,T2 and promote result
     #TODO implement check that A has compatible size with u
